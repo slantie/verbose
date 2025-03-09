@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Users table stores user credentials and profile information
+model User {
+  id            String         @id @default(uuid())
+  username      String         @unique
+  email         String         @unique
+  password      String
+  verified      Boolean        @default(false) // Email verification status
+  profilePic    String? // Profile picture URL
+  status        String? // User status (e.g., "Available", "Busy")
+  lastSeen      DateTime       @default(now())
+  chats         ChatUser[]
+  sentMessages  Message[]      @relation("SentMessages")
+  notifications Notification[]
+  reactions     Reaction[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  PollVote         PollVote[]
+  receivedMessages Message[]     @relation("ReceivedMessages")
+  refreshToken     RefreshToken?
+}
+
+/// Chat table to store 1-1 and group conversations
+model Chat {
+  id             String          @id @default(uuid())
+  isGroup        Boolean         @default(false)
+  name           String? // Only for group chats
+  users          ChatUser[]
+  messages       Message[]       @relation("ChatMessages")
+  pinnedMessages PinnedMessage[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  lastMessageId  String?
+  lastMessage    Message?        @relation("LastMessage", fields: [lastMessageId], references: [id])
+  Poll           Poll[]
+}
+
+/// Many-to-Many relationship between Users and Chats
+model ChatUser {
+  chatId   String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([chatId, userId])
+}
+
+/// Messages table for storing chat messages
+model Message {
+  id            String          @id @default(uuid())
+  chatId        String
+  senderId      String
+  receiverId    String
+  content       String? // Text message content
+  type          String          @default("TEXT") // Changed from MessageType enum to String
+  sender        User            @relation("SentMessages", fields: [senderId], references: [id])
+  receiver      User            @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  chat          Chat            @relation("ChatMessages", fields: [chatId], references: [id])
+  attachment    Attachment?
+  status        String          @default("SENT") // Changed from MessageStatus enum to String
+  isEdited      Boolean         @default(false) // Track if message is edited
+  isDeleted     Boolean         @default(false) // Track if message is deleted
+  disappearAt   DateTime? // Disappearing messages
+  parentId      String? // For replies/forwards
+  parent        Message?        @relation("MessageReplies", fields: [parentId], references: [id])
+  reactions     Reaction[]
+  createdAt     DateTime        @default(now())
+  read          Boolean         @default(false)
+  readAt        DateTime?
+  Message       Message[]       @relation("MessageReplies")
+  PinnedMessage PinnedMessage[]
+  Chat          Chat[]          @relation("LastMessage")
+
+  @@index([chatId, senderId])
+}
+
+/// Attachments table for storing file metadata
+model Attachment {
+  id        String  @id @default(uuid())
+  messageId String  @unique
+  url       String
+  fileType  String
+  message   Message @relation(fields: [messageId], references: [id])
+}
+
+/// Pinned Messages
+model PinnedMessage {
+  id        String   @id @default(uuid())
+  chatId    String
+  messageId String
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  message   Message  @relation(fields: [messageId], references: [id])
+  pinnedBy  String
+  createdAt DateTime @default(now())
+
+  @@unique([chatId, messageId])
+}
+
+/// Polls (For group chats)
+model Poll {
+  id        String   @id @default(uuid())
+  chatId    String
+  question  String
+  options   String // Changed from Json to String - store serialized JSON
+  createdBy String
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  createdAt DateTime @default(now())
+
+  PollVote PollVote[]
+}
+
+/// User Poll Votes
+model PollVote {
+  id     String @id @default(uuid())
+  pollId String
+  userId String
+  option String
+  poll   Poll   @relation(fields: [pollId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+/// Notifications for users (e.g., new messages, group invites)
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  isRead    Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+/// Reactions (Emoji Reactions on messages)
+model Reaction {
+  id        String  @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  message   Message @relation(fields: [messageId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId, emoji])
+}
+
+/// OTP table for storing email verification codes
+model OTP {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+/// Refresh Tokens
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Message Type options: TEXT, IMAGE, VIDEO, AUDIO, FILE, POLL
+// enum MessageType {
+//   TEXT
+//   IMAGE
+//   VIDEO
+//   AUDIO
+//   FILE
+//   POLL
+// }
+
+/// Message Status options: SENT, DELIVERED, READ
+// enum MessageStatus {
+//   SENT
+//   DELIVERED
+//   READ
+// }
