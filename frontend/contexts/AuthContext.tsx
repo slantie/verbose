@@ -48,37 +48,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return false;
   });
 
+  // Add this near the top of the AuthProvider component
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Base API URL
   const API_URL = "http://localhost:8000/api";
 
-  // Helper function for API requests
+  // Modify the existing apiRequest function
   const apiRequest = async (endpoint: string, options = {}) => {
-    const defaultOptions: RequestInit = {
-      credentials: "include" as RequestCredentials,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+    const makeRequest = async (retry = false) => {
+      const token = localStorage.getItem("auth_token");
+      const defaultOptions: RequestInit = {
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      };
+
+      const mergedOptions = { ...defaultOptions, ...options };
+      const response = await fetch(`${API_URL}${endpoint}`, mergedOptions);
+
+      if (response.status === 401 && !retry) {
+        const refreshSuccessful = await refreshToken();
+        if (refreshSuccessful) {
+          return makeRequest(true);
+        }
+      }
+
+      return response;
     };
 
-    // Add Authorization header if token exists in localStorage
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      defaultOptions.headers = {
-        ...defaultOptions.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
-
-    const mergedOptions = { ...defaultOptions, ...options };
-
-    return fetch(`${API_URL}${endpoint}`, mergedOptions);
+    return makeRequest();
   };
 
   // Check if user is logged in on initial load
   useEffect(() => {
     const checkAuth = async () => {
-      // Check if token exists in localStorage
       const token = localStorage.getItem("auth_token");
       if (!token) {
         console.log("No token in localStorage, user is not authenticated");
@@ -88,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       try {
-        console.log("Checking authentication status with token:", token.substring(0, 10) + "...");
+        console.log("Checking authentication status...");
         const response = await apiRequest("/auth/me");
 
         if (response.ok) {
@@ -96,15 +103,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.log("Auth check successful:", userData);
           setUser(userData);
           setIsAuthenticated(true);
-        } else {
-          console.log("Auth check failed, trying refresh token...");
+        } else if (response.status === 401) {
+          console.log("Auth check failed (401), attempting token refresh...");
           const refreshSuccessful = await refreshToken();
           if (!refreshSuccessful) {
-            console.log("Refresh token failed, user is not authenticated");
-            localStorage.removeItem("auth_token");
-            setUser(null);
-            setIsAuthenticated(false);
+            throw new Error("Token refresh failed");
           }
+        } else {
+          throw new Error(`Unexpected response: ${response.status}`);
         }
       } catch (error) {
         console.error("Authentication check failed:", error);
@@ -217,23 +223,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Token refresh function
+  // Replace the existing refreshToken function
   const refreshToken = async () => {
     try {
-      console.log("Attempting to refresh token...");
-      const response = await apiRequest("/auth/refresh", { method: "POST" });
-
-      if (!response.ok) {
-        console.log("Token refresh failed:", await response.text());
-        setUser(null);
-        setIsAuthenticated(false);
+      if (isRefreshing) {
+        console.log("Token refresh already in progress...");
         return false;
       }
 
-      const userData = await response.json();
+      setIsRefreshing(true);
+      console.log("Attempting to refresh token...");
+
+      const response = await apiRequest("/auth/refresh", { method: "POST" });
+      const responseText = await response.text();
+
+      // Only try to parse as JSON if there's actual content
+      const userData = responseText ? JSON.parse(responseText) : null;
+
+      if (!response.ok || !userData) {
+        console.log("Token refresh failed:", responseText);
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem("auth_token");
+        return false;
+      }
+
       console.log("Token refresh successful:", userData);
 
-      // Update token in localStorage if available
       if (userData.tokens?.accessToken) {
         localStorage.setItem("auth_token", userData.tokens.accessToken);
       }
@@ -247,6 +263,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsAuthenticated(false);
       localStorage.removeItem("auth_token");
       return false;
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -265,8 +283,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };

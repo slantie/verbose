@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Edit2, Trash2, MoreVertical } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Edit2, Trash2, MoreVertical } from "lucide-react";
 
 interface Message {
   id: string;
@@ -16,21 +16,28 @@ interface MessageActionsProps {
   onDelete: () => void;
 }
 
-export function MessageActions({ message, onEdit, onDelete }: MessageActionsProps) {
+export function MessageActions({
+  message,
+  onEdit,
+  onDelete,
+}: MessageActionsProps) {
   const [showActions, setShowActions] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+      if (
+        actionsRef.current &&
+        !actionsRef.current.contains(event.target as Node)
+      ) {
         setShowActions(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -40,7 +47,7 @@ export function MessageActions({ message, onEdit, onDelete }: MessageActionsProp
   };
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this message?')) {
+    if (window.confirm("Are you sure you want to delete this message?")) {
       onDelete();
     }
     setShowActions(false);
@@ -58,7 +65,7 @@ export function MessageActions({ message, onEdit, onDelete }: MessageActionsProp
 
   return (
     <div ref={actionsRef} className="relative">
-      <button 
+      <button
         onClick={() => setShowActions(!showActions)}
         className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 bg-gray-200 dark:bg-gray-700 rounded-full p-1 transition-opacity"
       >

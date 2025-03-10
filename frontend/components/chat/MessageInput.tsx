@@ -33,7 +33,7 @@ export function MessageInput({
   useEffect(() => {
     if (editMode && editContent) {
       setMessage(editContent);
-      
+
       // Focus on textarea when editing
       if (textareaRef.current) {
         textareaRef.current.focus();
@@ -82,7 +82,7 @@ export function MessageInput({
       } else {
         onSendMessage(message);
       }
-      
+
       setMessage("");
 
       // Reset textarea height
@@ -93,12 +93,12 @@ export function MessageInput({
   };
 
   return (
-    <div className="border-t p-2 bg-background flex items-end gap-2">
+    <div className="border-t p-2 bg-background flex items-end gap-2 relative">
       {editMode && (
-        <div className="absolute top-0 left-0 right-0 bg-yellow-50 dark:bg-yellow-900/20 p-2 text-sm border-b">
+        <div className="absolute top-0 transform -translate-y-full left-0 right-0 bg-yellow-50 dark:bg-yellow-900/20 p-2 text-sm border-b w-full">
           <div className="flex justify-between items-center">
             <span>Editing message</span>
-            <button 
+            <button
               onClick={onCancelEdit}
               className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             >
@@ -107,7 +107,7 @@ export function MessageInput({
           </div>
         </div>
       )}
-      
+
       <textarea
         ref={textareaRef}
         value={message}
@@ -118,7 +118,7 @@ export function MessageInput({
         disabled={isDisabled}
         rows={1}
       />
-      
+
       <Button
         onClick={handleAction}
         disabled={!message.trim() || isDisabled}

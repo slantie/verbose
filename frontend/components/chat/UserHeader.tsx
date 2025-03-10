@@ -1,14 +1,6 @@
 "use client";
 
 import { MoreVertical, Phone, Video } from "lucide-react";
-
-interface ChatUser {
-  id: string;
-  username: string;
-  email: string;
-  isOnline?: boolean;
-}
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +12,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
+interface ChatUser {
+  id: string;
+  username: string;
+  email: string;
+  isOnline?: boolean;
+}
+
 interface UserHeaderProps {
   user: ChatUser | null;
 }
@@ -29,7 +28,8 @@ export function UserHeader({ user }: UserHeaderProps) {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-between border-b p-4">
+      // Add shrink-0 to prevent the header from shrinking in flex layout
+      <div className="flex items-center justify-between border-b p-4 shrink-0">
         <div className="flex items-center gap-3">
           <h2 className="font-semibold text-muted-foreground">
             Select a chat to start messaging
@@ -40,7 +40,8 @@ export function UserHeader({ user }: UserHeaderProps) {
   }
 
   return (
-    <div className="flex items-center justify-between border-b p-4">
+    // Add shrink-0 to prevent the header from shrinking in flex layout
+    <div className="flex items-center justify-between border-b p-4 shrink-0">
       <div className="flex items-center gap-3">
         <Avatar>
           <AvatarImage src="" alt={user.username} />
@@ -57,68 +58,41 @@ export function UserHeader({ user }: UserHeaderProps) {
       </div>
       <div className="flex items-center gap-1">
         <Button
-          onClick={() => {
+          onClick={() =>
             toast({
-              title: "Feature coming soon",
-              description: "Voice calls will be available in a future update",
-            });
-          }}
+              description: "Video call feature coming soon",
+            })
+          }
+          variant="ghost"
+          size="icon"
         >
-          <Phone className="h-5 w-5" />
-          <span className="sr-only">Voice call</span>
+          <Video className="h-4 w-4" />
+          <span className="sr-only">Video Call</span>
         </Button>
         <Button
-          onClick={() => {
+          onClick={() =>
             toast({
-              title: "Feature coming soon",
-              description: "Video calls will be available in a future update",
-            });
-          }}
+              description: "Voice call feature coming soon",
+            })
+          }
+          variant="ghost"
+          size="icon"
         >
-          <Video className="h-5 w-5" />
-          <span className="sr-only">Video call</span>
+          <Phone className="h-4 w-4" />
+          <span className="sr-only">Voice Call</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button>
-              <MoreVertical className="h-5 w-5" />
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
               <span className="sr-only">More options</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                toast({
-                  title: "User profile",
-                  description: "Viewing user profile will be available soon",
-                });
-              }}
-            >
-              View Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                toast({
-                  title: "Search in conversation",
-                  description: "Search functionality will be available soon",
-                });
-              }}
-            >
-              Search in Conversation
-            </DropdownMenuItem>
+            <DropdownMenuItem>View Contact</DropdownMenuItem>
+            <DropdownMenuItem>Search in Conversation</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => {
-                toast({
-                  title: "Block user",
-                  description: "This feature will be available soon",
-                  variant: "destructive",
-                });
-              }}
-            >
-              Block User
-            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-500">Block</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

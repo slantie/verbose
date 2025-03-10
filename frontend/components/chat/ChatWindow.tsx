@@ -379,25 +379,9 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/messages/edit/${messageId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          content: newContent,
-        }),
-      });
-
-      if (response.status === 401) {
-        // Token expired, attempt to refresh
-        const refreshed = await refreshToken();
-        if (!refreshed) {
-          throw new Error("Authentication failed");
-        }
-        // Retry with fresh token
-        const retryResponse = await fetch(`http://localhost:8000/api/messages/edit/${messageId}`, {
+      const response = await fetch(
+        `http://localhost:8000/api/messages/edit/${messageId}`,
+        {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -406,14 +390,36 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
           body: JSON.stringify({
             content: newContent,
           }),
-        });
+        }
+      );
+
+      if (response.status === 401) {
+        // Token expired, attempt to refresh
+        const refreshed = await refreshToken();
+        if (!refreshed) {
+          throw new Error("Authentication failed");
+        }
+        // Retry with fresh token
+        const retryResponse = await fetch(
+          `http://localhost:8000/api/messages/edit/${messageId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              content: newContent,
+            }),
+          }
+        );
 
         if (!retryResponse.ok) {
           throw new Error("Failed to edit message after token refresh");
         }
 
         const updatedMessage = await retryResponse.json();
-        
+
         // Also emit through socket for real-time update
         socketRef.current?.emit("editMessage", {
           messageId,
@@ -424,14 +430,16 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
         // Update local state
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === messageId ? { ...msg, content: newContent, isEdited: true } : msg
+            msg.id === messageId
+              ? { ...msg, content: newContent, isEdited: true }
+              : msg
           )
         );
       } else if (!response.ok) {
         throw new Error("Failed to edit message");
       } else {
         const updatedMessage = await response.json();
-        
+
         // Also emit through socket for real-time update
         socketRef.current?.emit("editMessage", {
           messageId,
@@ -441,9 +449,7 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
 
         // Update local state
         setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === messageId ? updatedMessage : msg
-          )
+          prev.map((msg) => (msg.id === messageId ? updatedMessage : msg))
         );
       }
     } catch (error) {
@@ -461,10 +467,13 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/messages/delete/${messageId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const response = await fetch(
+        `http://localhost:8000/api/messages/delete/${messageId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
 
       if (response.status === 401) {
         // Token expired, attempt to refresh
@@ -473,10 +482,13 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
           throw new Error("Authentication failed");
         }
         // Retry with fresh token
-        const retryResponse = await fetch(`http://localhost:8000/api/messages/delete/${messageId}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
+        const retryResponse = await fetch(
+          `http://localhost:8000/api/messages/delete/${messageId}`,
+          {
+            method: "DELETE",
+            credentials: "include",
+          }
+        );
 
         if (!retryResponse.ok) {
           throw new Error("Failed to delete message after token refresh");
@@ -491,7 +503,9 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
         // Update local state
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === messageId ? { ...msg, isDeleted: true, content: "This message was deleted" } : msg
+            msg.id === messageId
+              ? { ...msg, isDeleted: true, content: "This message was deleted" }
+              : msg
           )
         );
       } else if (!response.ok) {
@@ -506,7 +520,9 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
         // Update local state
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === messageId ? { ...msg, isDeleted: true, content: "This message was deleted" } : msg
+            msg.id === messageId
+              ? { ...msg, isDeleted: true, content: "This message was deleted" }
+              : msg
           )
         );
       }
@@ -529,9 +545,13 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    // Use relative positioning and h-full for proper layout control
+    <div className="flex flex-col h-full relative">
       {!isConnected && (
-        <Alert variant="destructive" className="m-2">
+        <Alert
+          variant="destructive"
+          className="m-2 absolute top-0 left-0 right-0 z-10"
+        >
           <p>Connection lost. Trying to reconnect...</p>
         </Alert>
       )}
@@ -539,7 +559,7 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
       {error && (
         <Alert
           variant="destructive"
-          className="m-2 flex justify-between items-center"
+          className="m-2 absolute top-0 left-0 right-0 z-10 flex justify-between items-center"
         >
           <p>{error}</p>
           <button
@@ -552,7 +572,7 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
       )}
 
       {selectedUser && (
-        <div className="border-b p-3 flex items-center gap-2">
+        <div className="border-b p-3 flex items-center gap-2 shrink-0">
           <span
             className={`h-3 w-3 rounded-full ${
               onlineUsers.find((u) => u.id === selectedUser.id)?.online
@@ -572,6 +592,7 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
         </div>
       )}
 
+      {/* Use flex-1 and overflow-auto to allow proper scrolling within this div only */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 relative">
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -613,14 +634,16 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
                         autoFocus
                       />
                       <div className="flex justify-end gap-2">
-                        <button 
+                        <button
                           onClick={cancelEditing}
                           className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded"
                         >
                           Cancel
                         </button>
-                        <button 
-                          onClick={() => handleEditMessage(message.id, editContent)}
+                        <button
+                          onClick={() =>
+                            handleEditMessage(message.id, editContent)
+                          }
                           className="text-xs px-2 py-1 bg-blue-500 text-white rounded"
                         >
                           Save
@@ -629,25 +652,33 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
                     </div>
                   ) : (
                     <>
-                      <p className={message.isDeleted ? "italic text-gray-400" : ""}>
+                      <p
+                        className={
+                          message.isDeleted ? "italic text-gray-400" : ""
+                        }
+                      >
                         {message.content}
                       </p>
                       <div className="flex justify-between items-center text-xs opacity-70 mt-1">
                         <div className="flex items-center gap-1">
-                          <span>{new Date(message.createdAt).toLocaleString()}</span>
+                          <span>
+                            {new Date(message.createdAt).toLocaleString()}
+                          </span>
                           {message.isEdited && !message.isDeleted && (
                             <span className="italic">(edited)</span>
                           )}
                         </div>
                         {message.senderId === user?.id && (
-                          <span className="ml-2">{message.read ? "✓✓" : "✓"}</span>
+                          <span className="ml-2">
+                            {message.read ? "✓✓" : "✓"}
+                          </span>
                         )}
                       </div>
-                      
+
                       {/* Message actions (edit, delete) */}
                       {message.senderId === user?.id && !message.isDeleted && (
-                        <MessageActions 
-                          message={message} 
+                        <MessageActions
+                          message={message}
                           onEdit={() => startEditingMessage(message)}
                           onDelete={() => handleDeleteMessage(message.id)}
                         />
@@ -678,20 +709,23 @@ export function ChatWindow({ selectedUser }: ChatWindowProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <MessageInput
-        onSendMessage={handleSendMessage}
-        isDisabled={isSending || !isConnected}
-        isSending={isSending}
-        onTyping={handleTyping}
-        editMode={!!editingMessageId}
-        editContent={editContent}
-        onCancelEdit={cancelEditing}
-        onEditMessage={
-          editingMessageId 
-            ? (content) => handleEditMessage(editingMessageId, content) 
-            : undefined
-        }
-      />
+      {/* Set as shrink-0 so it doesn't get compressed */}
+      <div className="shrink-0">
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          isDisabled={isSending || !isConnected}
+          isSending={isSending}
+          onTyping={handleTyping}
+          editMode={!!editingMessageId}
+          editContent={editContent}
+          onCancelEdit={cancelEditing}
+          onEditMessage={
+            editingMessageId
+              ? (content) => handleEditMessage(editingMessageId, content)
+              : undefined
+          }
+        />
+      </div>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Bell, Check, Trash2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Spinner } from './spinner';
+import { Bell, Check, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Spinner } from "./spinner";
 
 interface Notification {
   id: string;
@@ -30,31 +30,34 @@ export function NotificationPanel() {
 
   const fetchNotifications = async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch("http://localhost:8000/api/notifications", {
         credentials: "include",
       });
-      
+
       if (response.status === 401) {
         // Token expired, attempt to refresh
         const refreshed = await refreshToken();
         if (!refreshed) {
           throw new Error("Authentication failed");
         }
-        
+
         // Retry with fresh token
-        const retryResponse = await fetch("http://localhost:8000/api/notifications", {
-          credentials: "include",
-        });
-        
+        const retryResponse = await fetch(
+          "http://localhost:8000/api/notifications",
+          {
+            credentials: "include",
+          }
+        );
+
         if (!retryResponse.ok) {
           throw new Error("Failed to fetch notifications after token refresh");
         }
-        
+
         const data = await retryResponse.json();
         setNotifications(data);
       } else if (!response.ok) {
@@ -73,17 +76,20 @@ export function NotificationPanel() {
 
   const markAsRead = async (notificationId: string) => {
     if (!user) return;
-    
+
     try {
-      const response = await fetch(`http://localhost:8000/api/notifications/${notificationId}/read`, {
-        method: "PUT",
-        credentials: "include",
-      });
-      
+      const response = await fetch(
+        `http://localhost:8000/api/notifications/${notificationId}/read`,
+        {
+          method: "PUT",
+          credentials: "include",
+        }
+      );
+
       if (response.ok) {
         // Update local state
-        setNotifications(prev =>
-          prev.map(notif =>
+        setNotifications((prev) =>
+          prev.map((notif) =>
             notif.id === notificationId ? { ...notif, isRead: true } : notif
           )
         );
@@ -94,18 +100,21 @@ export function NotificationPanel() {
   };
 
   const markAllAsRead = async () => {
-    if (!user || notifications.filter(n => !n.isRead).length === 0) return;
-    
+    if (!user || notifications.filter((n) => !n.isRead).length === 0) return;
+
     try {
-      const response = await fetch("http://localhost:8000/api/notifications/read-all", {
-        method: "PUT",
-        credentials: "include",
-      });
-      
+      const response = await fetch(
+        "http://localhost:8000/api/notifications/read-all",
+        {
+          method: "PUT",
+          credentials: "include",
+        }
+      );
+
       if (response.ok) {
         // Update local state
-        setNotifications(prev =>
-          prev.map(notif => ({ ...notif, isRead: true }))
+        setNotifications((prev) =>
+          prev.map((notif) => ({ ...notif, isRead: true }))
         );
       }
     } catch (error) {
@@ -115,17 +124,20 @@ export function NotificationPanel() {
 
   const deleteNotification = async (notificationId: string) => {
     if (!user) return;
-    
+
     try {
-      const response = await fetch(`http://localhost:8000/api/notifications/${notificationId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      
+      const response = await fetch(
+        `http://localhost:8000/api/notifications/${notificationId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
       if (response.ok) {
         // Update local state
-        setNotifications(prev =>
-          prev.filter(notif => notif.id !== notificationId)
+        setNotifications((prev) =>
+          prev.filter((notif) => notif.id !== notificationId)
         );
       }
     } catch (error) {
@@ -133,10 +145,10 @@ export function NotificationPanel() {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <div className="relative">
+    <div className="relative z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -148,14 +160,14 @@ export function NotificationPanel() {
           </span>
         )}
       </button>
-      
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50"
+            className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg"
           >
             <div className="flex justify-between items-center p-3 border-b">
               <h3 className="font-medium">Notifications</h3>
@@ -169,8 +181,9 @@ export function NotificationPanel() {
                 </button>
               )}
             </div>
-            
-            <div className="max-h-[400px] overflow-y-auto">
+
+            {/* Set a fixed max-height for this div to avoid it extending beyond viewport */}
+            <div className="max-h-[50vh] overflow-y-auto">
               {isLoading ? (
                 <div className="flex justify-center items-center py-8">
                   <Spinner size="md" />
@@ -191,14 +204,16 @@ export function NotificationPanel() {
                 </div>
               ) : (
                 <AnimatePresence>
-                  {notifications.map(notification => (
+                  {notifications.map((notification) => (
                     <motion.div
                       key={notification.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0, height: 0 }}
                       className={`p-3 border-b flex items-start justify-between gap-2 ${
-                        !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        !notification.isRead
+                          ? "bg-blue-50 dark:bg-blue-900/20"
+                          : ""
                       }`}
                     >
                       <div className="flex-1">
@@ -207,7 +222,7 @@ export function NotificationPanel() {
                           {new Date(notification.createdAt).toLocaleString()}
                         </p>
                       </div>
-                      
+
                       <div className="flex items-center gap-1">
                         {!notification.isRead && (
                           <button

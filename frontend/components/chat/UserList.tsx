@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { User } from "lucide-react";
+import { Spinner } from "../ui/spinner";
 
 interface ChatUser {
   id: string;
@@ -73,38 +74,50 @@ export function UserList({ onSelectUser }: UserListProps) {
   }, [isAuthenticated, refreshToken]);
 
   return (
-    <div className="w-80 border-r border-gray-200 dark:border-gray-800">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+    // Add flex-col and h-full for proper height distribution
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
         <h2 className="text-xl font-semibold">Chats</h2>
       </div>
-      <div className="overflow-y-auto h-full">
-        {users.map((user) => (
-          <div
-            key={user.id}
-            className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 ${
-              selectedUser?.id === user.id ? "bg-gray-50 dark:bg-gray-900" : ""
-            }`}
-            onClick={() => {
-              setSelectedUser(user);
-              onSelectUser(user);
-            }}
-          >
-            <div className="relative">
-              <div className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/20">
-                <User className="h-5 w-5 text-purple-600" />
-              </div>
-              {user.isOnline && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
-              )}
-            </div>
-            <div>
-              <p className="font-medium">{user.username}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {user.email}
-              </p>
-            </div>
+      {/* Make this flex-1 and overflow-y-auto to contain scrolling */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex justify-center items-center h-32">
+            <Spinner size="lg" />
           </div>
-        ))}
+        ) : users.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">No users found</div>
+        ) : (
+          users.map((user) => (
+            <div
+              key={user.id}
+              className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 ${
+                selectedUser?.id === user.id
+                  ? "bg-gray-50 dark:bg-gray-900"
+                  : ""
+              }`}
+              onClick={() => {
+                setSelectedUser(user);
+                onSelectUser(user);
+              }}
+            >
+              <div className="relative">
+                <div className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/20">
+                  <User className="h-5 w-5 text-purple-600" />
+                </div>
+                {user.isOnline && (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium">{user.username}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

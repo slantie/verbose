@@ -1,14 +1,13 @@
-import "./globals.css";
-import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
-import { HeaderWrapper } from "@/components/common/HeaderWrapper"; // Update import
 import { RootProvider } from "@/components/providers/RootProvider";
+import { Inter } from "next/font/google";
+import type { Metadata } from "next";
+import "./globals.css";
 
-const dmSans = DM_Sans({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Verbose Chat",
-  description: "A real-time chat application with OTP verification",
+  title: "Chat App",
+  description: "Real-time chat application",
 };
 
 export default function RootLayout({
@@ -18,10 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={dmSans.className}>
+      <body className={`${inter.className} h-[100dvh] overflow-hidden`}>
         <RootProvider>
-          <HeaderWrapper /> {/* Replace Header with HeaderWrapper */}
-          {children}
+          <div className="flex flex-col h-full">
+            {/* App header would go here if present */}
+            <main className="flex-1 overflow-hidden">{children}</main>
+          </div>
         </RootProvider>
       </body>
     </html>
